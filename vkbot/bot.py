@@ -1,6 +1,6 @@
 import vk_api
 import vk_api.bot_longpoll
-from token import token
+from config import token
 group_id = 221518988
 
 
