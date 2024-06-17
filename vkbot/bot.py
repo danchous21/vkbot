@@ -1,6 +1,9 @@
+import random
+
 import vk_api
 import vk_api.bot_longpoll
 from config import token
+
 group_id = 221518988
 
 
@@ -10,10 +13,10 @@ class Bot:
         self.token = token
         self.vk = vk_api.VkApi(token=token)
         self.long_poller = vk_api.bot_longpoll.VkBotLongPoll(self.vk, self.group_id)
+        self.api = self.vk.get_api()
 
     def run(self):
         for event in self.long_poller.listen():
-            print('получено событие')
             try:
                 self.on_event(event)
             except Exception as exc:
@@ -22,7 +25,11 @@ class Bot:
     def on_event(self, event):
         if event.type == vk_api.bot_longpoll.VkBotEventType.MESSAGE_NEW:
             print(event.object.text)
-        else:
+            self.api.messages.send(
+                message=event.object.text,
+                random_id=random.randint(0, 2 ** 20)
+            peer_id = event.object.peer_id)
+            else:
             print('Мы пока не умеем обрабатывать событие такого типа', event.type)
 
 
