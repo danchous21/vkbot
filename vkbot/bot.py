@@ -45,17 +45,20 @@ class Bot:
             log.info('Мы пока не умеем обрабатывать событие такого типа %s', event.type)
 
     def handle_message_new(self, event):
-        message_text = event.object.get('message', {}).get('text')
-        log.debug('Получено новое сообщение: %s', message_text)
-        if message_text:
+        message = event.object.get('message', {})
+        message_text = message.get('text')
+        peer_id = message.get('peer_id')
+
+        log.debug('Получено новое сообщение: %s', message)
+        if message_text and peer_id:
             log.debug('Отправляем сообщение назад')
             self.api.messages.send(
                 message=message_text,
                 random_id=random.randint(0, 2 ** 20),
-                peer_id=event.object['message']['peer_id'],
+                peer_id=peer_id,
             )
         else:
-            log.warning('Пустое сообщение не будет отправлено')
+            log.warning('Пустое сообщение или отсутствует peer_id. Сообщение не будет отправлено.')
 
     def handle_message_reply(self, event):
         log.info('Получен ответ на сообщение: %s', event.object)
