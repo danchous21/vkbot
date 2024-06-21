@@ -8,7 +8,6 @@ from vk_api.bot_longpoll import VkBotLongPoll, VkBotEventType
 group_id = 221518988
 log = logging.getLogger('Bot')
 
-
 def configure_logging():
     stream_handler = logging.StreamHandler()
     stream_handler.setFormatter(logging.Formatter('%(levelname)s %(message)s'))
@@ -21,7 +20,6 @@ def configure_logging():
     log.addHandler(file_handler)
     log.setLevel(logging.DEBUG)
 
-
 class Bot:
     def __init__(self, group_id, token):
         self.group_id = group_id
@@ -33,21 +31,34 @@ class Bot:
     def run(self):
         for event in self.long_poller.listen():
             try:
+                log.debug('Получено событие: %s', event)
                 self.on_event(event)
             except Exception:
                 log.exception('Ошибка в обработке события')
 
     def on_event(self, event):
         if event.type == VkBotEventType.MESSAGE_NEW:
-            log.debug('Отправляем сообщение назад')
-            self.api.messages.send(
-                message=event.object.text,
-                random_id=random.randint(0, 2 ** 20),
-                peer_id=event.object.peer_id,
-            )
+            self.handle_message_new(event)
+        elif event.type == VkBotEventType.MESSAGE_REPLY:
+            self.handle_message_reply(event)
         else:
             log.info('Мы пока не умеем обрабатывать событие такого типа %s', event.type)
 
+    def handle_message_new(self, event):
+        message_text = event.object.get('message', {}).get('text')
+        log.debug('Получено новое сообщение: %s', message_text)
+        if message_text:
+            log.debug('Отправляем сообщение назад')
+            self.api.messages.send(
+                message=message_text,
+                random_id=random.randint(0, 2 ** 20),
+                peer_id=event.object['message']['peer_id'],
+            )
+        else:
+            log.warning('Пустое сообщение не будет отправлено')
+
+    def handle_message_reply(self, event):
+        log.info('Получен ответ на сообщение: %s', event.object)
 
 if __name__ == '__main__':
     configure_logging()
