@@ -41,6 +41,10 @@ class Bot:
             self.handle_message_new(event)
         elif event.type == VkBotEventType.MESSAGE_REPLY:
             self.handle_message_reply(event)
+        elif event.type == VkBotEventType.MESSAGE_READ:
+            self.handle_message_read(event)
+        elif event.type == VkBotEventType.MESSAGE_TYPING_STATE:
+            self.handle_message_typing_state(event)
         else:
             log.info('Мы пока не умеем обрабатывать событие такого типа %s', event.type)
 
@@ -65,6 +69,12 @@ class Bot:
 
     def handle_message_reply(self, event):
         log.info('Получен ответ на сообщение: %s', event.object)
+
+    def handle_message_read(self, event):
+        log.info('Сообщение прочитано: %s', event.object)
+
+    def handle_message_typing_state(self, event):
+        log.info('Пользователь печатает: %s', event.object)
 
 if __name__ == '__main__':
     configure_logging()
