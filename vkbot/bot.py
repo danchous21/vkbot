@@ -14,7 +14,7 @@ def configure_logging():
     stream_handler.setLevel(logging.INFO)
     log.addHandler(stream_handler)
 
-    file_handler = logging.FileHandler('bot.log')
+    file_handler = logging.FileHandler('bot.log', mode='w', encoding='utf-8')
     file_handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)s %(message)s'))
     file_handler.setLevel(logging.DEBUG)
     log.addHandler(file_handler)
@@ -52,11 +52,14 @@ class Bot:
         log.debug('Получено новое сообщение: %s', message)
         if message_text and peer_id:
             log.debug('Отправляем сообщение назад')
-            self.api.messages.send(
-                message=message_text,
-                random_id=random.randint(0, 2 ** 20),
-                peer_id=peer_id,
-            )
+            try:
+                self.api.messages.send(
+                    message=message_text,
+                    random_id=random.randint(0, 2 ** 20),
+                    peer_id=peer_id,
+                )
+            except vk_api.exceptions.ApiError as e:
+                log.error('Ошибка VK API: %s', e)
         else:
             log.warning('Пустое сообщение или отсутствует peer_id. Сообщение не будет отправлено.')
 
