@@ -37,16 +37,17 @@ class Bot:
                 log.exception('Ошибка в обработке события')
 
     def on_event(self, event):
-        if event.type == VkBotEventType.MESSAGE_NEW:
+        event_type = event.type
+        if event_type == VkBotEventType.MESSAGE_NEW:
             self.handle_message_new(event)
-        elif event.type == VkBotEventType.MESSAGE_REPLY:
+        elif event_type == VkBotEventType.MESSAGE_REPLY:
             self.handle_message_reply(event)
-        elif event.type == VkBotEventType.MESSAGE_READ:
+        elif event_type == 'message_read':
             self.handle_message_read(event)
-        elif event.type == VkBotEventType.MESSAGE_TYPING_STATE:
+        elif event_type == 'message_typing_state':
             self.handle_message_typing_state(event)
         else:
-            log.info('Мы пока не умеем обрабатывать событие такого типа %s', event.type)
+            log.info('Мы пока не умеем обрабатывать событие такого типа %s', event_type)
 
     def handle_message_new(self, event):
         message = event.object.get('message', {})
