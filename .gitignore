@@ -1,8 +1,10 @@
 # created by virtualenv automatically
 Lib
 Scripts
-.gitignore
 .idea
 pyvenv.cfg
 External Libraries
 Scratches and Consoles
+settings.py
+bot.log
+

@@ -2,10 +2,13 @@ import logging
 import random
 
 import vk_api
-from config import token
+
+try:
+    from settings import TOKEN, GROUP_ID
+except ImportError:
+    exit('Необходимо создать файл settings.py с параметрами TOKEN и GROUP_ID')
 from vk_api.bot_longpoll import VkBotLongPoll, VkBotEventType
 
-group_id = 221518988
 log = logging.getLogger('Bot')
 
 
@@ -23,22 +26,37 @@ def configure_logging():
 
 
 class Bot:
-    def __init__(self, group_id, token):
-        self.group_id = group_id
-        self.token = token
-        self.vk = vk_api.VkApi(token=token)
+    """
+    Echo bot для vk.com
+    Use python 3.12
+    """
+
+    def __init__(self, GROUP_ID, TOKEN):
+        """
+        :param GROUP_ID: group id из группы vk
+        :param TOKEN: секретный токен
+        """
+        self.group_id = GROUP_ID
+        self.token = TOKEN
+        self.vk = vk_api.VkApi(token=TOKEN)
         self.long_poller = VkBotLongPoll(self.vk, self.group_id)
         self.api = self.vk.get_api()
 
     def run(self):
         for event in self.long_poller.listen():
+            """Запуск Бота"""
             try:
                 log.debug('Получено событие: %s', event)
                 self.on_event(event)
             except Exception:
                 log.exception('Ошибка в обработке события')
 
-    def on_event(self, event):
+    def on_event(self, event: VkBotEventType):
+        """Отправляет сообщение назад, если это текст
+
+        :param event: VkBotMessageEvent Object
+        :return: None
+        """
         if event.type == VkBotEventType.MESSAGE_NEW:
             log.debug('Отправляем сообщение назад')
             self.api.messages.send(
@@ -52,5 +70,5 @@ class Bot:
 
 if __name__ == '__main__':
     configure_logging()
-    bot = Bot(group_id=group_id, token=token)
+    bot = Bot(GROUP_ID=GROUP_ID, TOKEN=TOKEN)
     bot.run()
