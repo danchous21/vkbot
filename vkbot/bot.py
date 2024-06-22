@@ -33,6 +33,7 @@ class Bot:
     def run(self):
         for event in self.long_poller.listen():
             try:
+                log.debug('Получено событие: %s', event)
                 self.on_event(event)
             except Exception:
                 log.exception('Ошибка в обработке события')
