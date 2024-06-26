@@ -89,6 +89,7 @@ class Bot:
             text_to_send = self.continue_scenario(user_id, text)
         else:
             for intent in settings.INTENTS:
+                log.debug(f'User gets {intent}')
                 if any(token in text for token in intent['tokens']):
                     if intent['answer']:
                         text_to_send = intent['answer']
@@ -116,12 +117,18 @@ class Bot:
         steps = settings.SCENARIOS[state.scenario_name]['steps']
         step = steps[state.step_name]
         handler = getattr(handlers, step['handler'])
+
         if handler(text, context=state.context):
             next_step = steps[step['next_step']]
             text_to_send = next_step['text'].format(**state.context)
             if next_step['next_step']:
                 state.step_name = step['next_step']
             else:
+                if 'name' in state.context and 'email' in state.context:
+                    log.info('Зарегистрирован: {name} {email}'.format(**state.context))
+                else:
+                    log.warning('Попытка завершить регистрацию без всех данных.')
+
                 self.user_states.pop(user_id)
         else:
             text_to_send = step['failure_text'].format(**state.context)
