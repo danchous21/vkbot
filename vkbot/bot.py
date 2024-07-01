@@ -1,9 +1,10 @@
 import logging
 import random
 
+from pony.orm import db_session
+from models import UserState  # Импортируем только UserState из models
 import vk_api
 from vkbot import handlers
-
 try:
     import vkbot.settings as settings
 except ImportError:
@@ -11,7 +12,6 @@ except ImportError:
 from vk_api.bot_longpoll import VkBotLongPoll, VkBotEventType
 
 log = logging.getLogger('Bot')
-
 
 def configure_logging():
     stream_handler = logging.StreamHandler()
@@ -24,18 +24,6 @@ def configure_logging():
     file_handler.setLevel(logging.DEBUG)
     log.addHandler(file_handler)
     log.setLevel(logging.DEBUG)
-
-
-class UserState:
-    '''
-    Состояние пользователя внутри сценария
-    '''
-
-    def __init__(self, scenario_name, step_name, context=None):
-        self.scenario_name = scenario_name
-        self.step_name = step_name
-        self.context = context or {}
-
 
 class Bot:
     """
@@ -60,7 +48,6 @@ class Bot:
         self.vk = vk_api.VkApi(token=token)
         self.long_poller = VkBotLongPoll(self.vk, self.group_id)
         self.api = self.vk.get_api()
-        self.user_states = dict()  # user_id -> UserState
 
     def run(self):
         for event in self.long_poller.listen():
@@ -71,6 +58,7 @@ class Bot:
             except Exception:
                 log.exception('Ошибка в обработке события')
 
+    @db_session
     def on_event(self, event, settings):
         """Отправляет сообщение назад, если это текст
 
@@ -82,11 +70,12 @@ class Bot:
             log.info('Мы пока не умеем обрабатывать событие такого типа %s', event.type)
             return
 
-        user_id = event.object['message']['peer_id']
+        user_id = str(event.object['message']['peer_id'])  # Приведение user_id к строке
         text = event.object.get('message', {}).get('text')
+        state = UserState.get(user_id=user_id)
 
-        if user_id in self.user_states:
-            text_to_send = self.continue_scenario(user_id, text)
+        if state is not None:
+            text_to_send = self.continue_scenario(text, state)
         else:
             for intent in settings.INTENTS:
                 log.debug(f'User gets {intent}')
@@ -109,11 +98,10 @@ class Bot:
         first_step = scenario['first_step']
         step = scenario['steps'][first_step]
         text_to_send = step['text']
-        self.user_states[user_id] = UserState(scenario_name=scenario_name, step_name=first_step)
+        UserState(user_id=user_id, scenario_name=scenario_name, step_name=first_step, context={})
         return text_to_send
 
-    def continue_scenario(self, user_id, text):
-        state = self.user_states[user_id]
+    def continue_scenario(self, text, state):
         steps = settings.SCENARIOS[state.scenario_name]['steps']
         step = steps[state.step_name]
         handler = getattr(handlers, step['handler'])
@@ -129,11 +117,10 @@ class Bot:
                 else:
                     log.warning('Попытка завершить регистрацию без всех данных.')
 
-                self.user_states.pop(user_id)
+                state.delete()
         else:
             text_to_send = step['failure_text'].format(**state.context)
         return text_to_send
-
 
 if __name__ == '__main__':
     configure_logging()
