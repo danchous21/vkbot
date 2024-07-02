@@ -1,11 +1,19 @@
 from copy import deepcopy
 from unittest import TestCase
 from unittest.mock import patch, Mock
+
+from pony.orm import rollback, db_session
+
 import vkbot.settings as settings
 from bot import Bot
 from vk_api.bot_longpoll import VkBotMessageEvent
 
-
+def isolate_db(test_func):
+    def wrapper(*args, **kwargs):
+        with db_session:
+            test_func(*args, **kwargs)
+            rollback()
+    return wrapper()
 class Test1(TestCase):
     RAW_EVENT = {
         'type': 'message_new',
@@ -16,6 +24,7 @@ class Test1(TestCase):
                                    'keyboard': True, 'inline_keyboard': True, 'carousel': True, 'lang_id': 0}},
         'group_id': 183721469}
 
+    @isolate_db
     def test_run(self):
         count = 5
         events = [{}] * count

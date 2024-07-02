@@ -2,7 +2,7 @@ import logging
 import random
 
 from pony.orm import db_session
-from models import UserState  # Импортируем только UserState из models
+from models import UserState, Registration
 import vk_api
 from vkbot import handlers
 try:
@@ -98,7 +98,7 @@ class Bot:
         first_step = scenario['first_step']
         step = scenario['steps'][first_step]
         text_to_send = step['text']
-        UserState(user_id=user_id, scenario_name=scenario_name, step_name=first_step, context={})
+        UserState(user_id=str(user_id), scenario_name=scenario_name, step_name=first_step, context={})
         return text_to_send
 
     def continue_scenario(self, text, state):
@@ -116,7 +116,7 @@ class Bot:
                     log.info('Зарегистрирован: {name} {email}'.format(**state.context))
                 else:
                     log.warning('Попытка завершить регистрацию без всех данных.')
-
+                Registration(name=state.context['name'], email=state.context['email'])
                 state.delete()
         else:
             text_to_send = step['failure_text'].format(**state.context)
